@@ -422,8 +422,8 @@ local function advance_step()
   if grid_device then
     grid_w = grid_device.cols
     grid_h = grid_device.rows
-    if grid_w ~= 8 and grid_w ~= 16 then grid_w = 16 end
-    if grid_h ~= 8 and grid_h ~= 16 then grid_h = 8 end
+    -- if grid_w ~= 8 and grid_w ~= 16 then grid_w = 16 end
+    -- if grid_h ~= 8 and grid_h ~= 16 then grid_h = 8 end
   end
   
   local active_notes_this_step = {}
@@ -601,8 +601,8 @@ local function screen_update()
 end
 
 local function init_scale()
-  scale_notes = MusicUtil.generate_scale_of_length(root_note, scale_type, 16)
-  while #scale_notes < 16 do
+  scale_notes = MusicUtil.generate_scale_of_length(root_note, scale_type, grid_w)
+  while #scale_notes < grid_w do
     table.insert(scale_notes, scale_notes[#scale_notes])
   end
   scale_note_names = MusicUtil.note_nums_to_names(scale_notes, true)
@@ -850,11 +850,16 @@ end
 
 
 function init()
+  grid_device = grid.connect(1)
+  grid_device.key = grid_key
   
-  for x = 1, 16 do
+  grid_w = grid_device.cols or 16
+  grid_h = grid_device.rows or 8
+  
+  for x = 1, grid_w do
     grid_leds[x] = {}
     trails[x] = {}
-    for y = 1, 16 do
+    for y = 1, grid_h do
       grid_leds[x][y] = 0
       trails[x][y] = 0
     end
@@ -867,9 +872,6 @@ function init()
     end
   end
   init_scale()
-  
-  grid_device = grid.connect(1)
-  grid_device.key = grid_key
   
   beat_clock = BeatClock.new()
   
@@ -981,11 +983,11 @@ function init()
       beat_clock:bpm_change(beat_clock.bpm)
     end}
   
-  params:add{type = "number", id = "pattern_width", name = "Pattern Width", min = 4, max = 64, default = 16,
+  params:add{type = "number", id = "pattern_width", name = "Pattern Width", min = 4, max = 64, default = grid_w,
     action = function()
       grid_dirty = true
     end}
-  params:add{type = "number", id = "pattern_height", name = "Pattern Height", min = 4, max = 64, default = 16,
+  params:add{type = "number", id = "pattern_height", name = "Pattern Height", min = 4, max = 64, default = grid_h,
     action = function()
       grid_dirty = true
     end}
@@ -1024,8 +1026,10 @@ function grid_redraw()
   local brightness
   
   -- Draw trails
-  for x = 1, 16 do
-    for y = 1, 16 do
+  -- for x = 1, 16 do
+  --   for y = 1, 16 do
+  for x = 1, grid_w do
+    for y = 1, grid_h do
       if trails[x][y] then grid_leds[x][y] = util.round(util.linlin(0, TRAIL_ANI_LENGTH, 0, TRAIL_BRIGHTNESS, trails[x][y]))
       else grid_leds[x][y] = 0 end
       if (x > params:get("pattern_width") or y > params:get("pattern_height")) and grid_leds[x][y] < OUTSIDE_BRIGHTNESS then grid_leds[x][y] = OUTSIDE_BRIGHTNESS end
